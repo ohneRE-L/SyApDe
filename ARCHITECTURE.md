@@ -215,23 +215,3 @@ erDiagram
 * `note` (`TEXT`, NULL): комментарий или системная отметка.
 
 ---
-
-## 5. Индексы базы данных (DDL)
-
-```sql
--- Быстрая фильтрация в рабочем дашборде инженеров поддержки
-CREATE INDEX idx_tickets_status ON tickets(status);
-CREATE INDEX idx_tickets_priority ON tickets(priority);
-CREATE INDEX idx_tickets_assignee_id ON tickets(assignee_id);
-CREATE INDEX idx_tickets_requester_id ON tickets(requester_id);
-
--- Фоновый контроль рисков нарушения SLA (частичные индексы)
-CREATE INDEX idx_tickets_sla_response ON tickets(response_due_at) WHERE first_responded_at IS NULL;
-CREATE INDEX idx_tickets_sla_resolution ON tickets(resolution_due_at) WHERE resolved_at IS NULL;
-
--- Выборка истории переписки в хронологическом порядке
-CREATE INDEX idx_messages_ticket_id_created ON ticket_messages(ticket_id, created_at ASC);
-
--- Быстрый доступ к вложениям сообщения
-CREATE INDEX idx_attachments_message_id ON attachments(message_id);
-```
