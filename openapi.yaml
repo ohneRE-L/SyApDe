@@ -7,12 +7,16 @@ servers:
   - url: http://localhost:8080/api/v1
     description: Локальный сервер разработки
 
+security:
+  - BearerAuth: []
+
 paths:
   /auth/login:
     post:
       summary: Аутентификация пользователя и получение JWT-токена
       tags:
         - Auth
+      security: []
       requestBody:
         required: true
         content:
@@ -34,6 +38,27 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
         '401':
           description: Неверный логин или пароль
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/verify:
+    get:
+      summary: Проверка валидности JWT-токена и получение данных текущего пользователя
+      tags:
+        - Auth
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Токен валиден, данные текущего пользователя успешно получены
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CurrentUserResponse'
+        '401':
+          description: Токен отсутствует, недействителен или истек
           content:
             application/json:
               schema:
@@ -363,7 +388,41 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
 
 components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: "JWT токен аутентификации. Передается в заголовке Authorization: Bearer <token>"
+
   schemas:
+    CurrentUserResponse:
+      type: object
+      required:
+        - id
+        - email
+        - role
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: "456e4567-e89b-12d3-a456-426614174111"
+        email:
+          type: string
+          format: email
+          example: "user@corp.local"
+        full_name:
+          type: string
+          example: "Иван Иванов"
+        role:
+          type: string
+          enum: [USER, SUPPORT_AGENT, ADMIN]
+          example: "USER"
+        created_at:
+          type: string
+          format: date-time
+          example: "2026-09-17T10:00:00Z"
+
     LoginRequest:
       type: object
       required:
