@@ -1,0 +1,581 @@
+openapi: 3.0.3
+info:
+  title: Helpdesk / Service Desk API
+  description: Спецификация REST API для тикет-системы технической поддержки (Лабораторная работа №2)
+  version: 1.0.0
+servers:
+  - url: http://localhost:8080/api/v1
+    description: Локальный сервер разработки
+
+paths:
+  /auth/login:
+    post:
+      summary: Аутентификация пользователя и получение JWT-токена
+      tags:
+        - Auth
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Успешная аутентификация
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '400':
+          description: Некорректные входные данные
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Неверный логин или пароль
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /tickets:
+    get:
+      summary: Получение списка тикетов с фильтрацией и пагинацией
+      tags:
+        - Tickets
+      parameters:
+        - name: status
+          in: query
+          description: Фильтр по статусу тикета
+          required: false
+          schema:
+            type: string
+            enum: [OPEN, IN_PROGRESS, WAITING_FOR_USER, RESOLVED, CLOSED]
+        - name: priority
+          in: query
+          description: Фильтр по приоритету
+          required: false
+          schema:
+            type: string
+            enum: [LOW, MEDIUM, HIGH, CRITICAL]
+        - name: limit
+          in: query
+          description: Количество записей на странице
+          required: false
+          schema:
+            type: integer
+            default: 20
+        - name: offset
+          in: query
+          description: Смещение выборки
+          required: false
+          schema:
+            type: integer
+            default: 0
+      responses:
+        '200':
+          description: Список тикетов успешно получен
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TicketResponse'
+        '401':
+          description: Пользователь не аутентифицирован
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    post:
+      summary: Создание нового обращения в службу поддержки
+      tags:
+        - Tickets
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTicketRequest'
+      responses:
+        '201':
+          description: Обращение успешно создано
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TicketResponse'
+        '400':
+          description: Ошибка валидации входных полей
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Пользователь не аутентифицирован
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /tickets/{id}:
+    get:
+      summary: Получение детальной информации по тикету
+      tags:
+        - Tickets
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Уникальный идентификатор тикета
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Данные тикета успешно получены
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TicketResponse'
+        '401':
+          description: Пользователь не аутентифицирован
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Доступ к чужому тикету запрещен
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Тикет с указанным ID не найден
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    patch:
+      summary: Частичное обновление статуса, приоритета или исполнителя
+      tags:
+        - Tickets
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Идентификатор тикета
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateTicketRequest'
+      responses:
+        '200':
+          description: Состояние тикета успешно обновлено
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TicketResponse'
+        '400':
+          description: Ошибка валидации переданных параметров
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Не аутентифицирован
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Недостаточно прав для смены статуса/назначения
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Тикет не найден
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /tickets/{id}/messages:
+    get:
+      summary: Получение истории сообщений по тикету
+      tags:
+        - Messages
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Идентификатор тикета
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: История переписки успешно получена
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MessageResponse'
+        '401':
+          description: Не аутентифицирован
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Доступ к переписке запрещен
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Тикет не найден
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    post:
+      summary: Добавление ответа в тикет (сообщение или внутренняя заметка)
+      tags:
+        - Messages
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Идентификатор тикета
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateMessageRequest'
+      responses:
+        '201':
+          description: Сообщение успешно опубликовано
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '400':
+          description: Пустое тело сообщения
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Не аутентифицирован
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Создание внутренней заметки запрещено обычному пользователю
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Тикет не найден
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /categories:
+    get:
+      summary: Получение перечня активных категорий обращений
+      tags:
+        - Categories
+      responses:
+        '200':
+          description: Справочник категорий получен
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CategoryResponse'
+        '401':
+          description: Не аутентифицирован
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    post:
+      summary: Создание новой категории обращений (только Admin)
+      tags:
+        - Categories
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCategoryRequest'
+      responses:
+        '201':
+          description: Категория создана
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CategoryResponse'
+        '400':
+          description: Ошибка входных данных
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Не аутентифицирован
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Доступ разрешен только администраторам
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Категория с таким названием уже существует
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  schemas:
+    LoginRequest:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+          example: "user@corp.local"
+        password:
+          type: string
+          format: password
+          example: "SecretPassword123!"
+
+    LoginResponse:
+      type: object
+      properties:
+        access_token:
+          type: string
+          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        token_type:
+          type: string
+          example: "Bearer"
+        expires_in:
+          type: integer
+          example: 3600
+
+    CreateTicketRequest:
+      type: object
+      required:
+        - subject
+        - description
+        - category_id
+        - priority
+      properties:
+        subject:
+          type: string
+          example: "Не удается подключиться к корпоративной VPN"
+        description:
+          type: string
+          example: "При попытке подключения клиент выдает ошибку TLS Handshake Timeout."
+        category_id:
+          type: string
+          format: uuid
+          example: "123e4567-e89b-12d3-a456-426614174000"
+        priority:
+          type: string
+          enum: [LOW, MEDIUM, HIGH, CRITICAL]
+          example: "HIGH"
+
+    UpdateTicketRequest:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [OPEN, IN_PROGRESS, WAITING_FOR_USER, RESOLVED, CLOSED]
+          example: "IN_PROGRESS"
+        priority:
+          type: string
+          enum: [LOW, MEDIUM, HIGH, CRITICAL]
+          example: "CRITICAL"
+        assignee_id:
+          type: string
+          format: uuid
+          example: "876e4567-e89b-12d3-a456-426614174999"
+
+    TicketResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+        subject:
+          type: string
+          example: "Не удается подключиться к корпоративной VPN"
+        description:
+          type: string
+          example: "При попытке подключения клиент выдает ошибку TLS Handshake Timeout."
+        status:
+          type: string
+          example: "OPEN"
+        priority:
+          type: string
+          example: "HIGH"
+        category_id:
+          type: string
+          format: uuid
+          example: "123e4567-e89b-12d3-a456-426614174000"
+        requester_id:
+          type: string
+          format: uuid
+          example: "456e4567-e89b-12d3-a456-426614174111"
+        assignee_id:
+          type: string
+          format: uuid
+          nullable: true
+          example: "876e4567-e89b-12d3-a456-426614174999"
+        sla_policy_id:
+          type: string
+          format: uuid
+          example: "999e4567-e89b-12d3-a456-426614174888"
+        response_due_at:
+          type: string
+          format: date-time
+          example: "2026-09-17T12:00:00Z"
+        resolution_due_at:
+          type: string
+          format: date-time
+          example: "2026-09-17T18:00:00Z"
+        first_responded_at:
+          type: string
+          format: date-time
+          nullable: true
+          example: null
+        resolved_at:
+          type: string
+          format: date-time
+          nullable: true
+          example: null
+        created_at:
+          type: string
+          format: date-time
+          example: "2026-09-17T10:00:00Z"
+        updated_at:
+          type: string
+          format: date-time
+          example: "2026-09-17T10:00:00Z"
+
+    CreateMessageRequest:
+      type: object
+      required:
+        - body
+      properties:
+        body:
+          type: string
+          example: "Уточните, пожалуйста, версию клиента VPN."
+        is_internal:
+          type: boolean
+          default: false
+          example: false
+
+    MessageResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: "a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d"
+        ticket_id:
+          type: string
+          format: uuid
+          example: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+        sender_id:
+          type: string
+          format: uuid
+          example: "876e4567-e89b-12d3-a456-426614174999"
+        body:
+          type: string
+          example: "Уточните, пожалуйста, версию клиента VPN."
+        is_internal:
+          type: boolean
+          example: false
+        created_at:
+          type: string
+          format: date-time
+          example: "2026-09-17T10:15:00Z"
+
+    CreateCategoryRequest:
+      type: object
+      required:
+        - title
+      properties:
+        title:
+          type: string
+          example: "Сетевые подключения"
+        description:
+          type: string
+          example: "Вопросы настройки роутеров, VPN, DNS и интернета"
+
+    CategoryResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: "123e4567-e89b-12d3-a456-426614174000"
+        title:
+          type: string
+          example: "Сетевые подключения"
+        description:
+          type: string
+          example: "Вопросы настройки роутеров, VPN, DNS и интернета"
+        is_active:
+          type: boolean
+          example: true
+
+    ErrorResponse:
+      type: object
+      required:
+        - code
+        - message
+        - timestamp
+      properties:
+        code:
+          type: string
+          example: "NOT_FOUND"
+        message:
+          type: string
+          example: "Запрашиваемый ресурс не найден"
+        timestamp:
+          type: string
+          format: date-time
+          example: "2026-09-17T10:20:00Z"
