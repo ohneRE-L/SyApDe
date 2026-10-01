@@ -1,0 +1,26 @@
+# Environment configuration
+.env
+.env.local
+
+# Dependencies & Virtual environments
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.venv/
+env/
+node_modules/
+
+# Build & Output
+dist/
+build/
+bin/
+*.exe
+*.bin
+
+# IDEs & Editors
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
