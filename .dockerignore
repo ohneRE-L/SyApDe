@@ -1,0 +1,38 @@
+# Git
+.git
+.gitignore
+
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# Python cache & virtual environments
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.venv/
+env/
+node_modules/
+
+# Build & packaging
+dist/
+build/
+bin/
+*.egg-info/
+
+# IDE & Editor files
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+
+# Documentation & Specifications (not needed in container runtime)
+README.md
+ARCHITECTURE.md
+openapi.yaml
+diagrams/
+Dockerfile
+.dockerignore
