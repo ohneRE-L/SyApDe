@@ -26,9 +26,9 @@ def _dsn() -> str:
     )
 
 
-@pytest_asyncio.fixture(scope="session")
+@pytest_asyncio.fixture
 async def pool():
-    """Пул соединений на всю сессию тестов."""
+    """Пул соединений для каждого теста."""
     p = await asyncpg.create_pool(_dsn(), min_size=1, max_size=3)
     yield p
     await p.close()

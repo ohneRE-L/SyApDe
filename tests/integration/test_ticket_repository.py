@@ -33,6 +33,7 @@ async def user(pool):
     u = await repo.create("TicketUser", "ticket_test@example.com", "hash_x")
     yield u
     async with pool.acquire() as conn:
+        await conn.execute("DELETE FROM tickets WHERE requester_id = $1", u.id)
         await conn.execute("DELETE FROM users WHERE id = $1", u.id)
 
 
@@ -44,6 +45,7 @@ async def category(pool):
     cat = await repo.create("TEST_TicketCat", "For ticket tests")
     yield cat
     async with pool.acquire() as conn:
+        await conn.execute("DELETE FROM tickets WHERE category_id = $1", cat.id)
         await conn.execute("DELETE FROM categories WHERE id = $1", cat.id)
 
 
