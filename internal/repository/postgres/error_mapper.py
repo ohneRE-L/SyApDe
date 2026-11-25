@@ -4,7 +4,12 @@
 
 import asyncpg
 
-from internal.domain.errors import AlreadyExistsError, DatabaseError, NotFoundError
+from internal.domain.errors import (
+    AlreadyExistsError,
+    DatabaseError,
+    InvalidInputError,
+    NotFoundError,
+)
 
 
 def map_asyncpg_error(entity: str, exc: Exception) -> Exception:
@@ -18,11 +23,9 @@ def map_asyncpg_error(entity: str, exc: Exception) -> Exception:
         Соответствующее доменное исключение.
     """
     if isinstance(exc, asyncpg.UniqueViolationError):
-        # Нарушение UNIQUE-ограничения: извлекаем имя поля из detail
         detail: str = getattr(exc, "detail", "") or ""
         field = "unknown"
         value: object = ""
-        # asyncpg: 'Key (email)=(foo@bar.com) already exists.'
         if "Key (" in detail:
             try:
                 field = detail.split("(")[1].split(")")[0]
@@ -37,5 +40,8 @@ def map_asyncpg_error(entity: str, exc: Exception) -> Exception:
 
     if isinstance(exc, asyncpg.NoDataFoundError):
         return NotFoundError(entity, "?")
+
+    if isinstance(exc, (asyncpg.DataError, asyncpg.CheckViolationError)):
+        return InvalidInputError(f"Invalid data for {entity}: {exc}")
 
     return DatabaseError(f"Unexpected database error for {entity}: {exc}", cause=exc)

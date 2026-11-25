@@ -49,9 +49,13 @@ class PgTicketRepository(TicketRepository):
     def __init__(self, pool: asyncpg.Pool) -> None:
         self._pool = pool
 
-    async def find_all(self) -> List[Ticket]:
+    async def find_all(self, limit: int = 100, offset: int = 0) -> List[Ticket]:
         async with self._pool.acquire() as conn:
-            rows = await conn.fetch(f"{_SELECT} ORDER BY created_at DESC")
+            rows = await conn.fetch(
+                f"{_SELECT} ORDER BY created_at DESC, id DESC LIMIT $1 OFFSET $2",
+                limit,
+                offset,
+            )
         return [_row_to_ticket(r) for r in rows]
 
     async def find_by_id(self, ticket_id: str) -> Optional[Ticket]:
@@ -105,20 +109,28 @@ class PgTicketRepository(TicketRepository):
             raise map_asyncpg_error("Ticket", exc) from exc
         return _row_to_ticket(row)
 
-    async def update_status(self, ticket_id: str, status: str) -> Ticket:
+    async def update_status(
+        self,
+        ticket_id: str,
+        status: str,
+        resolved_at: Optional[datetime] = None,
+    ) -> Ticket:
         try:
             async with self._pool.acquire() as conn:
                 row = await conn.fetchrow(
                     """
                     UPDATE tickets
-                    SET status = $1, updated_at = now()
-                    WHERE id = $2
+                    SET status = $1,
+                        resolved_at = COALESCE($2, resolved_at),
+                        updated_at = now()
+                    WHERE id = $3
                     RETURNING id, subject, description, status, priority,
                               category_id, requester_id, assignee_id, sla_policy_id,
                               response_due_at, resolution_due_at, first_responded_at,
                               resolved_at, created_at, updated_at
                     """,
                     status,
+                    resolved_at,
                     ticket_id,
                 )
         except asyncpg.PostgresError as exc:

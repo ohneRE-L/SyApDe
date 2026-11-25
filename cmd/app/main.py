@@ -3,9 +3,12 @@ import logging
 import uvicorn
 from fastapi import FastAPI
 from internal.config.config import load_config
+from internal.controller.category_controller import create_category_router
+from internal.controller.exception_handlers import register_exception_handlers
+from internal.controller.health_controller import create_health_router
+from internal.controller.ticket_controller import create_ticket_router
 from internal.database.postgres import connect_db
 from internal.service.health_service import HealthService
-from internal.controller.health_controller import create_health_router
 
 # Настройка логирования приложения
 logging.basicConfig(
@@ -49,9 +52,13 @@ def create_app() -> FastAPI:
         lifespan=lifespan,
     )
 
-    # Регистрация маршрутизатора
-    health_router = create_health_router(health_svc)
-    app.include_router(health_router)
+    # Единая обработка доменных ошибок -> HTTP-статусы
+    register_exception_handlers(app)
+
+    # Регистрация маршрутизаторов
+    app.include_router(create_health_router(health_svc))
+    app.include_router(create_category_router())
+    app.include_router(create_ticket_router())
 
     return app
 

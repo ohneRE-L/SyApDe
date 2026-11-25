@@ -3,6 +3,7 @@
 """
 
 from abc import ABC, abstractmethod
+from datetime import datetime
 from typing import List, Optional
 
 from internal.domain.models import Ticket
@@ -11,8 +12,8 @@ from internal.domain.models import Ticket
 class TicketRepository(ABC):
 
     @abstractmethod
-    async def find_all(self) -> List[Ticket]:
-        """Вернуть все тикеты."""
+    async def find_all(self, limit: int = 100, offset: int = 0) -> List[Ticket]:
+        """Вернуть тикеты с пагинацией."""
 
     @abstractmethod
     async def find_by_id(self, ticket_id: str) -> Optional[Ticket]:
@@ -31,8 +32,8 @@ class TicketRepository(ABC):
         category_id: str,
         requester_id: str,
         sla_policy_id: str,
-        response_due_at: object,
-        resolution_due_at: object,
+        response_due_at: datetime,
+        resolution_due_at: datetime,
     ) -> Ticket:
         """Создать тикет и вернуть сохранённую сущность.
 
@@ -41,7 +42,12 @@ class TicketRepository(ABC):
         """
 
     @abstractmethod
-    async def update_status(self, ticket_id: str, status: str) -> Ticket:
+    async def update_status(
+        self,
+        ticket_id: str,
+        status: str,
+        resolved_at: Optional[datetime] = None,
+    ) -> Ticket:
         """Обновить статус тикета.
 
         Raises:

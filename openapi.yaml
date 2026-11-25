@@ -467,6 +467,104 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
+  /categories/{id}:
+    get:
+      summary: Получение категории по ID
+      tags:
+        - Categories
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Категория найдена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CategoryResponse'
+        '404':
+          description: Категория не найдена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    put:
+      summary: Полное обновление категории
+      tags:
+        - Categories
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCategoryRequest'
+      responses:
+        '200':
+          description: Категория обновлена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CategoryResponse'
+        '400':
+          description: Ошибка валидации
+        '404':
+          description: Категория не найдена
+        '409':
+          description: Конфликт уникальности названия
+    delete:
+      summary: Удаление категории
+      tags:
+        - Categories
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Категория удалена
+        '404':
+          description: Категория не найдена
+        '409':
+          description: На категорию ссылаются существующие тикеты
+
+  /tickets/{id}/close:
+    post:
+      summary: Закрытие обращения
+      tags:
+        - Tickets
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Обращение закрыто
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TicketResponse'
+        '404':
+          description: Тикет не найден
+        '409':
+          description: Тикет уже закрыт
+
   /tickets/{id}/attachments:
     get:
       summary: Получение списка файлов, прикрепленных к тикету
